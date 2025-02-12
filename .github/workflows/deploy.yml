@@ -19,7 +19,7 @@ jobs:
         id: deploy
         run: |
           set -e
-          echo "DEPLOY_URL=$(vercel deploy --token=${{secrets.VERCEL_TOKEN}} --yes)" >> $GITHUB_OUTPUT
+          echo "DEPLOY_URL=$(vercel deploy --token=${{secrets.VERCEL_TOKEN}} --yes --no-wait)" >> $GITHUB_OUTPUT
 
   lint:
     runs-on: ubuntu-latest
