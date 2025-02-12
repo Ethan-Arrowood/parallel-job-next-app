@@ -1,0 +1,56 @@
+name: Deploy
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    outputs:
+        DEPLOY_URL: ${{ steps.deploy.outputs.DEPLOY_URL }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install Vercel CLI
+        run: npm i -g vercel
+      - name: Start Vercel Deployment
+        id: deploy
+        run: echo "DEPLOY_URL=$(vercel deploy --token=${{secrets.VERCEL_TOKEN}})" >> $GITHUB_OUTPUT
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run typecheck
+
+  cleanup-on-failure:
+    needs: [deploy, lint, typecheck]
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install Vercel CLI
+        run: npm i -g vercel
+      - name: Cancel Deploy
+        run: vercel remove --token=${{secrets.VERCEL_TOKEN}} -y ${{ needs.deploy.outputs.DEPLOY_URL }}
